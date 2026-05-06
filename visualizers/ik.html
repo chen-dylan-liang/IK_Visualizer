@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CPSC 487/587</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19.1/dist/lil-gui.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.3.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quaternion@1.5.1/quaternion.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/numeric@1.2.6/numeric-1.2.6.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+              "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+              "three/": "https://unpkg.com/three@0.160.0/"
+            }
+        }
+    </script>
+    <style>
+    html,
+    body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1f2933;
+    }
+
+    canvas {
+        display: block;
+    }
+
+    #control-panel {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        z-index: 10;
+        width: 320px;
+        max-height: calc(100vh - 28px);
+        box-sizing: border-box;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: rgba(248, 250, 252, 0.94);
+        border: 1px solid rgba(15, 23, 42, 0.14);
+        border-radius: 8px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+        backdrop-filter: blur(8px);
+    }
+
+    .panel-header {
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+    }
+
+    .panel-title {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.25;
+        font-weight: 700;
+    }
+
+    .panel-subtitle {
+        margin: 4px 0 0;
+        font-size: 12px;
+        line-height: 1.35;
+        color: #52606d;
+    }
+
+    .panel-scroll {
+        overflow-y: auto;
+        padding: 12px 12px 16px;
+    }
+
+    .panel-section {
+        margin-bottom: 14px;
+    }
+
+    .section-title {
+        margin: 0 0 8px;
+        font-size: 12px;
+        line-height: 1.2;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #52606d;
+    }
+
+    .visibility-list {
+        display: grid;
+        gap: 7px;
+    }
+
+    .visibility-row {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        gap: 9px;
+        align-items: center;
+        min-height: 24px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .visibility-row input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #2563eb;
+        cursor: pointer;
+    }
+
+    .visibility-name {
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .robot-select {
+        width: 100%;
+        min-height: 30px;
+        box-sizing: border-box;
+        padding: 5px 8px;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        border-radius: 5px;
+        background: #ffffff;
+        color: #1f2933;
+        font-size: 12px;
+    }
+
+    .dof-row {
+        display: grid;
+        grid-template-columns: minmax(86px, 1fr) 128px 56px;
+        gap: 8px;
+        align-items: center;
+        min-height: 30px;
+        margin-bottom: 8px;
+    }
+
+    .dof-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .dof-slider {
+        width: 128px;
+        accent-color: #2563eb;
+    }
+
+    .dof-number {
+        width: 56px;
+        box-sizing: border-box;
+        padding: 4px 5px;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        border-radius: 5px;
+        background: #ffffff;
+        font-size: 11px;
+        color: #1f2933;
+    }
+
+    .dof-slider:disabled {
+        cursor: default;
+        opacity: 0.72;
+    }
+
+    .dof-number:disabled {
+        background: #f8fafc;
+        color: #1f2933;
+        cursor: default;
+        opacity: 1;
+    }
+
+    .button-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+    }
+
+    .panel-button {
+        min-height: 30px;
+        padding: 6px 8px;
+        border: 1px solid rgba(15, 23, 42, 0.16);
+        border-radius: 6px;
+        background: #ffffff;
+        color: #1f2933;
+        font-size: 12px;
+        line-height: 1.2;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .panel-button:hover {
+        background: #eff6ff;
+        border-color: rgba(37, 99, 235, 0.35);
+    }
+
+    .link-list {
+        display: grid;
+        gap: 6px;
+    }
+
+    .link-row {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        gap: 9px;
+        align-items: center;
+        min-height: 26px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .link-row input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #2563eb;
+        cursor: pointer;
+    }
+
+    .link-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+    </style>
+</head>
+<body>
+
+<div id="control-panel">
+    <div class="panel-header">
+        <h1 class="panel-title">Inverse Kinematics</h1>
+        <p class="panel-subtitle" id="panel-subtitle">XArm7 link frames</p>
+    </div>
+    <div class="panel-scroll">
+        <div class="panel-section">
+            <h2 class="section-title">Robot</h2>
+            <select class="robot-select" id="robot-select">
+                <option value="xarm">XArm7</option>
+                <option value="unitree">Unitree dog + arm</option>
+            </select>
+        </div>
+        <div class="panel-section">
+            <h2 class="section-title">Visualization</h2>
+            <div class="visibility-list">
+                <label class="visibility-row">
+                    <input id="mesh-visible-checkbox" type="checkbox" checked>
+                    <span class="visibility-name">Display mesh</span>
+                </label>
+                <label class="visibility-row">
+                    <input id="wireframe-visible-checkbox" type="checkbox">
+                    <span class="visibility-name">Display wireframe</span>
+                </label>
+                <label class="visibility-row">
+                    <input id="smooth-checkbox" type="checkbox">
+                    <span class="visibility-name">Smooth</span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-section">
+            <h2 class="section-title">DOFs</h2>
+            <div id="dof-controls"></div>
+        </div>
+        <div class="panel-section">
+            <div class="button-row">
+                <button class="panel-button" id="reset-button" type="button">Reset</button>
+                <button class="panel-button" id="select-all-button" type="button">Select all links</button>
+                <button class="panel-button" id="deselect-all-button" type="button">Deselect all links</button>
+            </div>
+        </div>
+        <div class="panel-section">
+            <h2 class="section-title">Links</h2>
+            <div class="link-list" id="link-controls"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import {
+        ThreeEngine,
+        convert_y_up_array_to_z_up_array,
+        convert_z_up_array_to_y_up_array
+    } from "../js/utils/utils_three.js";
+    import {B1Z1Robot, XArm7Robot} from "../js/utils/utils_robot.js";
+
+
+    let engine = ThreeEngine.new_default_3d(2.6, 2.2, 1.5);
+    engine.stats.dom.style.left = '348px';
+
+    const robotConfigs = {
+        xarm: {
+            subtitle: 'XArm7 link frames',
+            create: () => new XArm7Robot(),
+            buildTargets: buildXArmTargets
+        },
+        unitree: {
+            subtitle: 'Unitree dog + mounted arm link frames',
+            create: () => new B1Z1Robot(),
+            buildTargets: buildUnitreeTargets
+        }
+    };
+
+    const robotCache = {};
+    let activeRobotKey = 'xarm';
+    let robot = null;
+
+    const panelSubtitle = document.getElementById('panel-subtitle');
+    const robotSelect = document.getElementById('robot-select');
+    const dofControlsElement = document.getElementById('dof-controls');
+    const linkControlsElement = document.getElementById('link-controls');
+    const meshVisibleCheckbox = document.getElementById('mesh-visible-checkbox');
+    const wireframeVisibleCheckbox = document.getElementById('wireframe-visible-checkbox');
+    const smoothCheckbox = document.getElementById('smooth-checkbox');
+    const resetButton = document.getElementById('reset-button');
+    const selectAllButton = document.getElementById('select-all-button');
+    const deselectAllButton = document.getElementById('deselect-all-button');
+
+    let dofDescriptors = [];
+    let dofMotionKinds = [];
+    let dofValues = [];
+    let linkFrameVisible = [];
+    let targets = [];
+    let activeTargetIdx = null;
+    let loadingRobot = false;
+    let robotLoadToken = 0;
+
+    const visualizationState = {
+        meshVisible: true,
+        wireframeVisible: false,
+        smoothIK: false
+    };
+    const dofInputs = [];
+    const linkInputs = [];
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const pointerState = {
+        dragging: false,
+        pointerId: null,
+        targetIdx: null,
+        dragPlane: null,
+        dragOffset: [0, 0, 0]
+    };
+    const solverSettings = {
+        iterationsPerFrame: 8,
+        damping: 0.0004,
+        smoothWeight: 0.035,
+        tolerance: 0.0008
+    };
+    const targetPickRadiusPx = 36;
+    let linkTransforms = [];
+
+    await loadRobot(activeRobotKey);
+    addPointerInteraction();
+
+    robotSelect.addEventListener('change', () => {
+        void loadRobot(robotSelect.value);
+    });
+
+    meshVisibleCheckbox.addEventListener('change', () => {
+        visualizationState.meshVisible = meshVisibleCheckbox.checked;
+        applyRobotVisibility();
+    });
+
+    wireframeVisibleCheckbox.addEventListener('change', () => {
+        visualizationState.wireframeVisible = wireframeVisibleCheckbox.checked;
+        applyRobotVisibility();
+    });
+
+    smoothCheckbox.addEventListener('change', () => {
+        visualizationState.smoothIK = smoothCheckbox.checked;
+    });
+
+    resetButton.addEventListener('click', () => {
+        resetCurrentRobotState();
+    });
+
+    selectAllButton.addEventListener('click', () => {
+        setAllLinkFrames(true);
+    });
+
+    deselectAllButton.addEventListener('click', () => {
+        setAllLinkFrames(false);
+    });
+
+    engine.animation_loop( ()  => {
+        if (!robot || loadingRobot || targets.length === 0) {
+            return;
+        }
+
+        const previousDofs = dofValues.slice();
+        const activeTarget = targets[activeTargetIdx] ?? targets[0];
+        linkTransforms = solveInverseKinematics(activeTarget, previousDofs);
+        syncAllDofInputs();
+
+        linkTransforms.forEach((transform, linkIdx) => {
+            robot.set_link_mesh_pose_from_SE3_matrix(engine, linkIdx, transform);
+        });
+
+        drawIkTargets(engine, linkTransforms);
+
+        linkTransforms.forEach((transform, linkIdx) => {
+            if (linkFrameVisible[linkIdx]) {
+                drawLocalFrame(engine, transform, 0.13);
+            }
+        });
+    });
+
+    async function loadRobot(robotKey) {
+        const config = robotConfigs[robotKey];
+        if (!config) {
+            return;
+        }
+
+        const loadToken = ++robotLoadToken;
+        loadingRobot = true;
+
+        if (robot) {
+            robot.set_mesh_visibility(engine, false);
+            robot.set_wireframe_visibility(engine, false);
+        }
+
+        activeRobotKey = robotKey;
+        panelSubtitle.textContent = config.subtitle;
+
+        if (!robotCache[robotKey]) {
+            robotCache[robotKey] = config.create();
+        }
+
+        const nextRobot = robotCache[robotKey];
+        await nextRobot.spawn_robot(engine);
+
+        if (loadToken !== robotLoadToken) {
+            nextRobot.set_mesh_visibility(engine, false);
+            nextRobot.set_wireframe_visibility(engine, false);
+            return;
+        }
+
+        robot = nextRobot;
+        dofDescriptors = getDofDescriptors(robot);
+        dofMotionKinds = getDofMotionKinds(robot);
+        dofValues = dofDescriptors.map(descriptor => descriptor.defaultValue);
+        linkFrameVisible = robot.links.map(() => false);
+        linkTransforms = forwardKinematics(robot, dofValues);
+        targets = config.buildTargets(robot, linkTransforms);
+        activeTargetIdx = targets.length ? 0 : null;
+
+        buildDofControls();
+        buildLinkControls();
+        applyRobotVisibility();
+        loadingRobot = false;
+    }
+
+    function resetCurrentRobotState() {
+        if (!robot) {
+            return;
+        }
+
+        dofDescriptors.forEach((descriptor, idx) => {
+            dofValues[idx] = descriptor.defaultValue;
+            syncDofInput(idx);
+        });
+
+        linkTransforms = forwardKinematics(robot, dofValues);
+        targets = robotConfigs[activeRobotKey].buildTargets(robot, linkTransforms);
+        activeTargetIdx = targets.length ? 0 : null;
+    }
+
+    function buildDofControls() {
+        dofControlsElement.replaceChildren();
+        dofInputs.length = 0;
+
+        dofDescriptors.forEach((descriptor, idx) => {
+            const row = document.createElement('div');
+            row.className = 'dof-row';
+
+            const label = document.createElement('label');
+            label.className = 'dof-label';
+            label.htmlFor = `dof-slider-${idx}`;
+            label.title = descriptor.label;
+            label.textContent = descriptor.label;
+
+            const slider = document.createElement('input');
+            slider.className = 'dof-slider';
+            slider.id = `dof-slider-${idx}`;
+            slider.type = 'range';
+            slider.min = descriptor.min;
+            slider.max = descriptor.max;
+            slider.step = descriptor.step;
+            slider.value = dofValues[idx];
+            slider.disabled = true;
+
+            const number = document.createElement('input');
+            number.className = 'dof-number';
+            number.type = 'number';
+            number.min = descriptor.min;
+            number.max = descriptor.max;
+            number.step = descriptor.step;
+            number.value = formatNumber(dofValues[idx]);
+            number.disabled = true;
+
+            dofInputs[idx] = {slider, number};
+            row.append(label, slider, number);
+            dofControlsElement.appendChild(row);
+        });
+    }
+
+    function buildLinkControls() {
+        linkControlsElement.replaceChildren();
+        linkInputs.length = 0;
+
+        robot.links.forEach((link, idx) => {
+            const row = document.createElement('label');
+            row.className = 'link-row';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = linkFrameVisible[idx];
+            checkbox.addEventListener('change', () => {
+                linkFrameVisible[idx] = checkbox.checked;
+            });
+
+            const name = document.createElement('span');
+            name.className = 'link-name';
+            name.title = `${idx}: ${link.link_name}`;
+            name.textContent = `${idx}: ${link.link_name}`;
+
+            linkInputs[idx] = checkbox;
+            row.append(checkbox, name);
+            linkControlsElement.appendChild(row);
+        });
+    }
+
+    function applyRobotVisibility() {
+        if (!robot) {
+            return;
+        }
+
+        robot.set_mesh_visibility(engine, visualizationState.meshVisible);
+        robot.set_wireframe_visibility(engine, visualizationState.wireframeVisible);
+    }
+
+    function setAllLinkFrames(visible) {
+        linkFrameVisible.fill(visible);
+        linkInputs.forEach(input => {
+            input.checked = visible;
+        });
+    }
+
+    function syncDofInput(idx) {
+        const input = dofInputs[idx];
+        if (!input) {
+            return;
+        }
+
+        const {slider, number} = input;
+        if (!slider || !number) {
+            return;
+        }
+
+        slider.value = dofValues[idx];
+        number.value = formatNumber(dofValues[idx]);
+    }
+
+    function syncAllDofInputs() {
+        dofValues.forEach((_, idx) => {
+            syncDofInput(idx);
+        });
+    }
+
+    function buildXArmTargets(robotModel, transforms) {
+        const tcpLinkIdx = linkIdxByName(robotModel, 'link_tcp', robotModel.links.length - 1);
+        return [{
+            label: 'TCP',
+            linkIdx: tcpLinkIdx,
+            activeDofs: dofDescriptors.map((_, idx) => idx),
+            position: getTranslation(transforms[tcpLinkIdx]),
+            color: 0xf59e0b
+        }];
+    }
+
+    function buildUnitreeTargets(robotModel, transforms) {
+        const trunkDofs = translationDofsForJoint(robotModel, 'floating_base');
+        const targetSpecs = [
+            {
+                label: 'FR foot',
+                linkName: 'FR_foot',
+                jointNames: ['FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint'],
+                color: 0xf59e0b
+            },
+            {
+                label: 'FL foot',
+                linkName: 'FL_foot',
+                jointNames: ['FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint'],
+                color: 0x10b981
+            },
+            {
+                label: 'RR foot',
+                linkName: 'RR_foot',
+                jointNames: ['RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint'],
+                color: 0x3b82f6
+            },
+            {
+                label: 'RL foot',
+                linkName: 'RL_foot',
+                jointNames: ['RL_hip_joint', 'RL_thigh_joint', 'RL_calf_joint'],
+                color: 0xa855f7
+            },
+            {
+                label: 'Arm',
+                linkName: 'gripperMover',
+                jointNames: ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6'],
+                color: 0xef4444
+            }
+        ];
+
+        return targetSpecs.map(spec => {
+            const linkIdx = linkIdxByName(robotModel, spec.linkName, robotModel.links.length - 1);
+            const localDofs = spec.jointNames.map(name => dofForJoint(robotModel, name)).filter(idx => idx !== null);
+
+            return {
+                label: spec.label,
+                linkIdx,
+                activeDofs: uniqueDofs([...trunkDofs, ...localDofs]),
+                position: getTranslation(transforms[linkIdx]),
+                color: spec.color
+            };
+        });
+    }
+
+    function linkIdxByName(robotModel, linkName, fallbackIdx) {
+        const linkIdx = robotModel.links.findIndex(link => link.link_name === linkName);
+        return linkIdx >= 0 ? linkIdx : fallbackIdx;
+    }
+
+    function dofForJoint(robotModel, jointName) {
+        const joint = robotModel.joints.find(joint => joint.joint_name === jointName);
+        return joint && joint.dof_idx !== undefined ? joint.dof_idx : null;
+    }
+
+    function translationDofsForJoint(robotModel, jointName) {
+        const joint = robotModel.joints.find(joint => joint.joint_name === jointName);
+        return joint && joint.translation_dof_idxs ? joint.translation_dof_idxs.slice() : [];
+    }
+
+    function uniqueDofs(dofs) {
+        return [...new Set(dofs.filter(idx => Number.isInteger(idx)))];
+    }
+
+    function getDofDescriptors(robotModel) {
+        const descriptors = new Array(robotModel.num_dofs());
+        robotModel.joints.forEach(joint => {
+            if (joint.joint_type_string === 'revolute') {
+                descriptors[joint.dof_idx] = {
+                    label: `${joint.dof_idx}: ${joint.joint_name}`,
+                    min: joint.lower_bound,
+                    max: joint.upper_bound,
+                    step: 0.01,
+                    defaultValue: clamp(0, joint.lower_bound, joint.upper_bound)
+                };
+            } else if (joint.joint_type_string === 'prismatic') {
+                descriptors[joint.dof_idx] = {
+                    label: `${joint.dof_idx}: ${joint.joint_name}`,
+                    min: joint.lower_bound,
+                    max: joint.upper_bound,
+                    step: 0.005,
+                    defaultValue: clamp(0, joint.lower_bound, joint.upper_bound)
+                };
+            } else if (joint.joint_type_string === 'floating') {
+                const rotationNames = ['roll', 'pitch', 'yaw'];
+                const translationNames = ['x', 'y', 'z'];
+                joint.rotation_dof_idxs.forEach((dofIdx, axisIdx) => {
+                    descriptors[dofIdx] = {
+                        label: `${dofIdx}: ${joint.joint_name} ${rotationNames[axisIdx]}`,
+                        min: -Math.PI,
+                        max: Math.PI,
+                        step: 0.01,
+                        defaultValue: 0
+                    };
+                });
+                joint.translation_dof_idxs.forEach((dofIdx, axisIdx) => {
+                    descriptors[dofIdx] = {
+                        label: `${dofIdx}: ${joint.joint_name} ${translationNames[axisIdx]}`,
+                        min: -1,
+                        max: 1,
+                        step: 0.005,
+                        defaultValue: 0
+                    };
+                });
+            }
+        });
+
+        return Array.from({length: descriptors.length}, (_, idx) => descriptors[idx] ?? {
+            label: `${idx}: unused`,
+            min: -1,
+            max: 1,
+            step: 0.01,
+            defaultValue: 0
+        });
+    }
+
+    function getDofMotionKinds(robotModel) {
+        const kinds = new Array(robotModel.num_dofs()).fill('unused');
+        robotModel.joints.forEach(joint => {
+            if (joint.joint_type_string === 'revolute' || joint.joint_type_string === 'prismatic') {
+                kinds[joint.dof_idx] = joint.joint_type_string;
+            } else if (joint.joint_type_string === 'floating') {
+                joint.rotation_dof_idxs.forEach(dofIdx => {
+                    kinds[dofIdx] = 'revolute';
+                });
+                joint.translation_dof_idxs.forEach(dofIdx => {
+                    kinds[dofIdx] = 'prismatic';
+                });
+            }
+        });
+        return kinds;
+    }
+
+    function forwardKinematics(robotModel, dofs) {
+        return forwardKinematicsWithDofInfo(robotModel, dofs).transforms;
+    }
+
+    function forwardKinematicsWithDofInfo(robotModel, dofs) {
+        const transforms = robotModel.links.map(() => identitySE3());
+        const dofInfos = new Array(robotModel.num_dofs());
+
+        robotModel.kinematic_hierarchy.forEach(layer => {
+            layer.forEach(linkIdx => {
+                const link = robotModel.links[linkIdx];
+                if (link.parent_joint_idx === null || link.parent_joint_idx === undefined) {
+                    transforms[linkIdx] = identitySE3();
+                    return;
+                }
+
+                const joint = robotModel.joints[link.parent_joint_idx];
+                const parentTransform = transforms[joint.parent_link_idx] ?? identitySE3();
+                const originTransform = xyzRpySE3(joint.xyz, joint.rpy);
+                const jointFrameTransform = multiplySE3(parentTransform, originTransform);
+
+                if (joint.joint_type_string === 'revolute' || joint.joint_type_string === 'prismatic') {
+                    dofInfos[joint.dof_idx] = {
+                        jointType: joint.joint_type_string,
+                        origin: getTranslation(jointFrameTransform),
+                        axis: normalizeVector(transformDirection(jointFrameTransform, toVector3(joint.axis)))
+                    };
+                } else if (joint.joint_type_string === 'floating') {
+                    const basis = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+                    joint.translation_dof_idxs.forEach((dofIdx, axisIdx) => {
+                        dofInfos[dofIdx] = {
+                            jointType: 'prismatic',
+                            origin: getTranslation(jointFrameTransform),
+                            axis: normalizeVector(transformDirection(jointFrameTransform, basis[axisIdx]))
+                        };
+                    });
+                }
+
+                transforms[linkIdx] = multiplySE3(jointFrameTransform, jointMotionTransform(joint, dofs));
+            });
+        });
+
+        return {transforms, dofInfos};
+    }
+
+    function jointMotionTransform(joint, dofs) {
+        let motionTransform = identitySE3();
+
+        if (joint.joint_type_string === 'revolute') {
+            motionTransform = rotationSE3(axisAngleSO3(toVector3(joint.axis), dofs[joint.dof_idx]));
+        } else if (joint.joint_type_string === 'prismatic') {
+            const axis = normalizeVector(toVector3(joint.axis));
+            motionTransform = translationSE3(axis.map(v => v * dofs[joint.dof_idx]));
+        } else if (joint.joint_type_string === 'floating') {
+            const r = joint.rotation_dof_idxs.map(dofIdx => dofs[dofIdx]);
+            const t = joint.translation_dof_idxs.map(dofIdx => dofs[dofIdx]);
+            motionTransform = makeSE3(rpySO3(r), t);
+        }
+
+        return motionTransform;
+    }
+
+    function solveInverseKinematics(target, previousDofs) {
+        let kinematics = forwardKinematicsWithDofInfo(robot, dofValues);
+        const smoothWeight = visualizationState.smoothIK ? solverSettings.smoothWeight : 0;
+        const activeDofs = target.activeDofs;
+
+        for (let iter = 0; iter < solverSettings.iterationsPerFrame; iter++) {
+            const endEffectorPosition = getTranslation(kinematics.transforms[target.linkIdx]);
+            const error = sub3(endEffectorPosition, target.position);
+
+            if (norm3(error) < solverSettings.tolerance) {
+                break;
+            }
+
+            const jacobian = buildPositionJacobian(kinematics.dofInfos, endEffectorPosition, dofValues.length);
+            const normal = makeZeroMatrix(activeDofs.length, activeDofs.length);
+            const rhs = new Array(activeDofs.length).fill(0);
+
+            for (let row = 0; row < activeDofs.length; row++) {
+                const dofIdx = activeDofs[row];
+                const ji = jacobian[dofIdx];
+                rhs[row] = -(dot3(ji, error) + smoothWeight * (dofValues[dofIdx] - previousDofs[dofIdx]));
+
+                for (let col = 0; col < activeDofs.length; col++) {
+                    normal[row][col] = dot3(ji, jacobian[activeDofs[col]]);
+                }
+                normal[row][row] += solverSettings.damping + smoothWeight;
+            }
+
+            const rawStep = solveLinearSystem(normal, rhs);
+            if (!rawStep) {
+                break;
+            }
+
+            const step = limitIkStep(rawStep, activeDofs);
+            const currentObjective = ikObjective(kinematics, target, dofValues, previousDofs, smoothWeight, activeDofs);
+            let accepted = false;
+            let alpha = 1;
+
+            for (let attempt = 0; attempt < 8; attempt++) {
+                const candidateDofs = dofValues.slice();
+                activeDofs.forEach((dofIdx, stepIdx) => {
+                    const descriptor = dofDescriptors[dofIdx];
+                    candidateDofs[dofIdx] = clamp(
+                        candidateDofs[dofIdx] + alpha * step[stepIdx],
+                        descriptor.min,
+                        descriptor.max
+                    );
+                });
+
+                const candidateKinematics = forwardKinematicsWithDofInfo(robot, candidateDofs);
+                const candidateObjective = ikObjective(
+                    candidateKinematics,
+                    target,
+                    candidateDofs,
+                    previousDofs,
+                    smoothWeight,
+                    activeDofs
+                );
+
+                if (candidateObjective < currentObjective) {
+                    activeDofs.forEach(dofIdx => {
+                        dofValues[dofIdx] = candidateDofs[dofIdx];
+                    });
+                    kinematics = candidateKinematics;
+                    accepted = true;
+                    break;
+                }
+
+                alpha *= 0.5;
+            }
+
+            if (!accepted) {
+                break;
+            }
+        }
+
+        return kinematics.transforms;
+    }
+
+    function buildPositionJacobian(dofInfos, endEffectorPosition, numDofs) {
+        return Array.from({length: numDofs}, (_, idx) => {
+            const info = dofInfos[idx];
+            if (!info) {
+                return [0, 0, 0];
+            }
+
+            if (info.jointType === 'revolute') {
+                return cross3(info.axis, sub3(endEffectorPosition, info.origin));
+            }
+
+            if (info.jointType === 'prismatic') {
+                return info.axis;
+            }
+
+            return [0, 0, 0];
+        });
+    }
+
+    function ikObjective(kinematics, target, dofs, previousDofs, smoothWeight, activeDofs) {
+        const endEffectorPosition = getTranslation(kinematics.transforms[target.linkIdx]);
+        const positionError = sub3(endEffectorPosition, target.position);
+        let value = dot3(positionError, positionError);
+
+        if (smoothWeight > 0) {
+            activeDofs.forEach(dofIdx => {
+                const delta = dofs[dofIdx] - previousDofs[dofIdx];
+                value += smoothWeight * delta * delta;
+            });
+        }
+
+        return value;
+    }
+
+    function limitIkStep(step, activeDofs) {
+        let scale = 1;
+        step.forEach((value, idx) => {
+            if (!Number.isFinite(value)) {
+                scale = 0;
+                return;
+            }
+
+            const dofIdx = activeDofs[idx];
+            const maxStep = dofMotionKinds[dofIdx] === 'prismatic' ? 0.04 : 0.22;
+            const magnitude = Math.abs(value);
+            if (magnitude > maxStep) {
+                scale = Math.min(scale, maxStep / magnitude);
+            }
+        });
+
+        return step.map(value => value * scale);
+    }
+
+    function solveLinearSystem(matrix, rhs) {
+        const n = rhs.length;
+        const a = matrix.map((row, idx) => [...row, rhs[idx]]);
+
+        for (let col = 0; col < n; col++) {
+            let pivotRow = col;
+            let pivotAbs = Math.abs(a[col][col]);
+
+            for (let row = col + 1; row < n; row++) {
+                const candidateAbs = Math.abs(a[row][col]);
+                if (candidateAbs > pivotAbs) {
+                    pivotAbs = candidateAbs;
+                    pivotRow = row;
+                }
+            }
+
+            if (pivotAbs < 1e-10) {
+                return null;
+            }
+
+            if (pivotRow !== col) {
+                const tmp = a[col];
+                a[col] = a[pivotRow];
+                a[pivotRow] = tmp;
+            }
+
+            const pivot = a[col][col];
+            for (let j = col; j <= n; j++) {
+                a[col][j] /= pivot;
+            }
+
+            for (let row = 0; row < n; row++) {
+                if (row === col) {
+                    continue;
+                }
+
+                const factor = a[row][col];
+                for (let j = col; j <= n; j++) {
+                    a[row][j] -= factor * a[col][j];
+                }
+            }
+        }
+
+        return a.map(row => row[n]);
+    }
+
+    function addPointerInteraction() {
+        const canvas = engine.renderer.domElement;
+
+        canvas.addEventListener('pointerdown', event => {
+            const targetIdx = pickTarget(event);
+            if (targetIdx === null) {
+                return;
+            }
+
+            event.preventDefault();
+            pointerState.dragging = true;
+            pointerState.pointerId = event.pointerId;
+            pointerState.targetIdx = targetIdx;
+            activeTargetIdx = targetIdx;
+            canvas.setPointerCapture(event.pointerId);
+            canvas.style.cursor = 'grabbing';
+            engine.controls.enabled = false;
+
+            const target = targets[targetIdx];
+            const normal = new THREE.Vector3();
+            engine.camera.getWorldDirection(normal);
+            pointerState.dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, zUpToThreeVector(target.position));
+
+            const hit = intersectPointerWithPlane(event, pointerState.dragPlane);
+            pointerState.dragOffset = hit ? sub3(target.position, threeVectorToZUp(hit)) : [0, 0, 0];
+        });
+
+        canvas.addEventListener('pointermove', event => {
+            if (pointerState.dragging && event.pointerId === pointerState.pointerId) {
+                const hit = intersectPointerWithPlane(event, pointerState.dragPlane);
+                const target = targets[pointerState.targetIdx];
+                if (hit && target) {
+                    target.position = add3(threeVectorToZUp(hit), pointerState.dragOffset);
+                }
+                return;
+            }
+
+            canvas.style.cursor = pickTarget(event) !== null ? 'grab' : '';
+        });
+
+        const stopDragging = event => {
+            if (!pointerState.dragging || event.pointerId !== pointerState.pointerId) {
+                return;
+            }
+
+            pointerState.dragging = false;
+            pointerState.pointerId = null;
+            pointerState.targetIdx = null;
+            pointerState.dragPlane = null;
+            pointerState.dragOffset = [0, 0, 0];
+            canvas.style.cursor = '';
+            engine.controls.enabled = true;
+
+            if (canvas.hasPointerCapture(event.pointerId)) {
+                canvas.releasePointerCapture(event.pointerId);
+            }
+        };
+
+        canvas.addEventListener('pointerup', stopDragging);
+        canvas.addEventListener('pointercancel', stopDragging);
+        canvas.addEventListener('lostpointercapture', () => {
+            pointerState.dragging = false;
+            pointerState.pointerId = null;
+            pointerState.targetIdx = null;
+            pointerState.dragPlane = null;
+            pointerState.dragOffset = [0, 0, 0];
+            canvas.style.cursor = '';
+            engine.controls.enabled = true;
+        });
+    }
+
+    function pickTarget(event) {
+        let bestIdx = null;
+        let bestDistance = Infinity;
+
+        targets.forEach((target, idx) => {
+            const distance = screenDistanceToTarget(event, target);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIdx = idx;
+            }
+        });
+
+        return bestDistance <= targetPickRadiusPx ? bestIdx : null;
+    }
+
+    function intersectPointerWithPlane(event, plane) {
+        const rect = engine.renderer.domElement.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, engine.camera);
+
+        const hit = new THREE.Vector3();
+        return raycaster.ray.intersectPlane(plane, hit) ? hit : null;
+    }
+
+    function screenDistanceToTarget(event, target) {
+        const targetScreenPosition = screenPointForZUp(target.position);
+        return Math.hypot(event.clientX - targetScreenPosition[0], event.clientY - targetScreenPosition[1]);
+    }
+
+    function screenPointForZUp(position) {
+        const rect = engine.renderer.domElement.getBoundingClientRect();
+        const point = zUpToThreeVector(position);
+        point.project(engine.camera);
+
+        return [
+            rect.left + (point.x * 0.5 + 0.5) * rect.width,
+            rect.top + (-point.y * 0.5 + 0.5) * rect.height
+        ];
+    }
+
+    function zUpToThreeVector(position) {
+        const yUp = convert_z_up_array_to_y_up_array(position);
+        return new THREE.Vector3(yUp[0], yUp[1], yUp[2]);
+    }
+
+    function threeVectorToZUp(vector) {
+        return convert_y_up_array_to_z_up_array([vector.x, vector.y, vector.z]);
+    }
+
+    function drawIkTargets(engine, transforms) {
+        targets.forEach((target, idx) => {
+            const endEffectorPosition = getTranslation(transforms[target.linkIdx]);
+            const isDragged = pointerState.dragging && pointerState.targetIdx === idx;
+            const targetColor = isDragged ? 0xf97316 : target.color;
+            const targetRadius = activeTargetIdx === idx ? 0.048 : 0.038;
+
+            engine.draw_debug_sphere(target.position, targetRadius, targetColor, 0.9, 18);
+            engine.draw_debug_sphere(endEffectorPosition, 0.022, 0x2563eb, 0.88, 14);
+
+            if (norm3(sub3(target.position, endEffectorPosition)) > 0.002) {
+                engine.draw_debug_line(endEffectorPosition, target.position, false, 0.007, targetColor, 0.8);
+            }
+        });
+    }
+
+    function drawLocalFrame(engine, transform, length) {
+        const origin = [[transform[0][3]], [transform[1][3]], [transform[2][3]]];
+        const xEnd = axisEndpoint(transform, 0, length);
+        const yEnd = axisEndpoint(transform, 1, length);
+        const zEnd = axisEndpoint(transform, 2, length);
+        const tailWidth = length * 0.045;
+        const arrowHeight = length * 0.28;
+
+        engine.draw_debug_vector(origin, xEnd, tailWidth, arrowHeight, 0xff3333, 0.95);
+        engine.draw_debug_vector(origin, yEnd, tailWidth, arrowHeight, 0x2fb344, 0.95);
+        engine.draw_debug_vector(origin, zEnd, tailWidth, arrowHeight, 0x3366ff, 0.95);
+    }
+
+    function axisEndpoint(transform, columnIdx, length) {
+        return [
+            [transform[0][3] + transform[0][columnIdx] * length],
+            [transform[1][3] + transform[1][columnIdx] * length],
+            [transform[2][3] + transform[2][columnIdx] * length]
+        ];
+    }
+
+    function identitySE3() {
+        return [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ];
+    }
+
+    function makeSE3(rotation, translation) {
+        return [
+            [rotation[0][0], rotation[0][1], rotation[0][2], translation[0]],
+            [rotation[1][0], rotation[1][1], rotation[1][2], translation[1]],
+            [rotation[2][0], rotation[2][1], rotation[2][2], translation[2]],
+            [0, 0, 0, 1]
+        ];
+    }
+
+    function translationSE3(translation) {
+        return makeSE3(identitySO3(), translation);
+    }
+
+    function rotationSE3(rotation) {
+        return makeSE3(rotation, [0, 0, 0]);
+    }
+
+    function xyzRpySE3(xyz, rpy) {
+        return makeSE3(rpySO3(rpy), xyz);
+    }
+
+    function identitySO3() {
+        return [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ];
+    }
+
+    function rpySO3(rpy) {
+        return multiplySO3(multiplySO3(xRotationSO3(rpy[0]), yRotationSO3(rpy[1])), zRotationSO3(rpy[2]));
+    }
+
+    function xRotationSO3(theta) {
+        return [
+            [1, 0, 0],
+            [0, Math.cos(theta), -Math.sin(theta)],
+            [0, Math.sin(theta), Math.cos(theta)]
+        ];
+    }
+
+    function yRotationSO3(theta) {
+        return [
+            [Math.cos(theta), 0, Math.sin(theta)],
+            [0, 1, 0],
+            [-Math.sin(theta), 0, Math.cos(theta)]
+        ];
+    }
+
+    function zRotationSO3(theta) {
+        return [
+            [Math.cos(theta), -Math.sin(theta), 0],
+            [Math.sin(theta), Math.cos(theta), 0],
+            [0, 0, 1]
+        ];
+    }
+
+    function axisAngleSO3(axis, theta) {
+        const [x, y, z] = normalizeVector(axis);
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+        const v = 1 - c;
+
+        return [
+            [c + x * x * v, x * y * v - z * s, x * z * v + y * s],
+            [y * x * v + z * s, c + y * y * v, y * z * v - x * s],
+            [z * x * v - y * s, z * y * v + x * s, c + z * z * v]
+        ];
+    }
+
+    function multiplySO3(a, b) {
+        const out = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
+        ];
+
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                for (let k = 0; k < 3; k++) {
+                    out[row][col] += a[row][k] * b[k][col];
+                }
+            }
+        }
+
+        return out;
+    }
+
+    function multiplySE3(a, b) {
+        const out = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ];
+
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                for (let k = 0; k < 4; k++) {
+                    out[row][col] += a[row][k] * b[k][col];
+                }
+            }
+        }
+
+        return out;
+    }
+
+    function transformDirection(transform, direction) {
+        return [
+            transform[0][0] * direction[0] + transform[0][1] * direction[1] + transform[0][2] * direction[2],
+            transform[1][0] * direction[0] + transform[1][1] * direction[1] + transform[1][2] * direction[2],
+            transform[2][0] * direction[0] + transform[2][1] * direction[1] + transform[2][2] * direction[2]
+        ];
+    }
+
+    function getTranslation(transform) {
+        return [transform[0][3], transform[1][3], transform[2][3]];
+    }
+
+    function makeZeroMatrix(rows, cols) {
+        return Array.from({length: rows}, () => new Array(cols).fill(0));
+    }
+
+    function add3(a, b) {
+        return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+    }
+
+    function sub3(a, b) {
+        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    }
+
+    function dot3(a, b) {
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    }
+
+    function cross3(a, b) {
+        return [
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]
+        ];
+    }
+
+    function norm3(value) {
+        return Math.hypot(value[0], value[1], value[2]);
+    }
+
+    function toVector3(value) {
+        if (Array.isArray(value[0])) {
+            return [value[0][0], value[1][0], value[2][0]];
+        }
+
+        return value;
+    }
+
+    function normalizeVector(value) {
+        const length = Math.hypot(value[0], value[1], value[2]);
+        if (length < 0.000001) {
+            return [0, 0, 1];
+        }
+
+        return [value[0] / length, value[1] / length, value[2] / length];
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function formatNumber(value) {
+        return Number(value).toFixed(3);
+    }
+
+</script>
+</body>
+</html>

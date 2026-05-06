@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CPSC 487/587</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19.1/dist/lil-gui.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.3.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quaternion@1.5.1/quaternion.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/numeric@1.2.6/numeric-1.2.6.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+              "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+              "three/": "https://unpkg.com/three@0.160.0/"
+            }
+        }
+    </script>
+    <style>
+    html,
+    body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1f2933;
+    }
+
+    canvas {
+        display: block;
+    }
+
+    #control-panel {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        z-index: 10;
+        width: 320px;
+        max-height: calc(100vh - 28px);
+        box-sizing: border-box;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: rgba(248, 250, 252, 0.94);
+        border: 1px solid rgba(15, 23, 42, 0.14);
+        border-radius: 8px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+        backdrop-filter: blur(8px);
+    }
+
+    .panel-header {
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+    }
+
+    .panel-title {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.25;
+        font-weight: 700;
+    }
+
+    .panel-subtitle {
+        margin: 4px 0 0;
+        font-size: 12px;
+        line-height: 1.35;
+        color: #52606d;
+    }
+
+    .panel-scroll {
+        overflow-y: auto;
+        padding: 12px 12px 16px;
+    }
+
+    .panel-section {
+        margin-bottom: 14px;
+    }
+
+    .section-title {
+        margin: 0 0 8px;
+        font-size: 12px;
+        line-height: 1.2;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #52606d;
+    }
+
+    .visibility-list {
+        display: grid;
+        gap: 7px;
+    }
+
+    .visibility-row {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        gap: 9px;
+        align-items: center;
+        min-height: 24px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .visibility-row input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #2563eb;
+        cursor: pointer;
+    }
+
+    .visibility-name {
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .dof-row {
+        display: grid;
+        grid-template-columns: minmax(86px, 1fr) 128px 56px;
+        gap: 8px;
+        align-items: center;
+        min-height: 30px;
+        margin-bottom: 8px;
+    }
+
+    .dof-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .dof-slider {
+        width: 128px;
+        accent-color: #2563eb;
+    }
+
+    .dof-number {
+        width: 56px;
+        box-sizing: border-box;
+        padding: 4px 5px;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        border-radius: 5px;
+        background: #ffffff;
+        font-size: 11px;
+        color: #1f2933;
+    }
+
+    .button-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+    }
+
+    .panel-button {
+        min-height: 30px;
+        padding: 6px 8px;
+        border: 1px solid rgba(15, 23, 42, 0.16);
+        border-radius: 6px;
+        background: #ffffff;
+        color: #1f2933;
+        font-size: 12px;
+        line-height: 1.2;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .panel-button:hover {
+        background: #eff6ff;
+        border-color: rgba(37, 99, 235, 0.35);
+    }
+
+    .link-list {
+        display: grid;
+        gap: 6px;
+    }
+
+    .link-row {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        gap: 9px;
+        align-items: center;
+        min-height: 26px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .link-row input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #2563eb;
+        cursor: pointer;
+    }
+
+    .link-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+    </style>
+</head>
+<body>
+
+<div id="control-panel">
+    <div class="panel-header">
+        <h1 class="panel-title">Forward Kinematics</h1>
+        <p class="panel-subtitle">XArm7 link frames</p>
+    </div>
+    <div class="panel-scroll">
+        <div class="panel-section">
+            <h2 class="section-title">Visualization</h2>
+            <div class="visibility-list">
+                <label class="visibility-row">
+                    <input id="mesh-visible-checkbox" type="checkbox" checked>
+                    <span class="visibility-name">Display mesh</span>
+                </label>
+                <label class="visibility-row">
+                    <input id="wireframe-visible-checkbox" type="checkbox">
+                    <span class="visibility-name">Display wireframe</span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-section">
+            <h2 class="section-title">DOFs</h2>
+            <div id="dof-controls"></div>
+        </div>
+        <div class="panel-section">
+            <div class="button-row">
+                <button class="panel-button" id="reset-button" type="button">Reset</button>
+                <button class="panel-button" id="select-all-button" type="button">Select all links</button>
+                <button class="panel-button" id="deselect-all-button" type="button">Deselect all links</button>
+            </div>
+        </div>
+        <div class="panel-section">
+            <h2 class="section-title">Links</h2>
+            <div class="link-list" id="link-controls"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import {ThreeEngine} from "../js/utils/utils_three.js";
+    import {B1Z1Robot, XArm7Robot} from "../js/utils/utils_robot.js";
+
+
+    let engine = ThreeEngine.new_default_3d(2.6, 2.2, 1.5);
+    engine.stats.dom.style.left = '348px';
+
+    // if you want to use the XArm7 robot:
+    let robot = new XArm7Robot();
+
+    // or, if you want to use the B1Z1 robot, comment the previous robot and uncomment this line:
+    // let robot = new B1Z1Robot();
+
+    const dofControlsElement = document.getElementById('dof-controls');
+    const linkControlsElement = document.getElementById('link-controls');
+    const meshVisibleCheckbox = document.getElementById('mesh-visible-checkbox');
+    const wireframeVisibleCheckbox = document.getElementById('wireframe-visible-checkbox');
+    const resetButton = document.getElementById('reset-button');
+    const selectAllButton = document.getElementById('select-all-button');
+    const deselectAllButton = document.getElementById('deselect-all-button');
+
+    const dofDescriptors = getDofDescriptors(robot);
+    const dofValues = dofDescriptors.map(descriptor => descriptor.defaultValue);
+    const linkFrameVisible = robot.links.map(() => false);
+    const visualizationState = {
+        meshVisible: true,
+        wireframeVisible: false
+    };
+    const dofInputs = [];
+    const linkInputs = [];
+    let linkTransforms = [];
+
+    // this will spawn all of the robot's links at the origin
+    await robot.spawn_robot(engine);
+    applyRobotVisibility();
+
+    buildDofControls();
+    buildLinkControls();
+
+    meshVisibleCheckbox.addEventListener('change', () => {
+        visualizationState.meshVisible = meshVisibleCheckbox.checked;
+        applyRobotVisibility();
+    });
+
+    wireframeVisibleCheckbox.addEventListener('change', () => {
+        visualizationState.wireframeVisible = wireframeVisibleCheckbox.checked;
+        applyRobotVisibility();
+    });
+
+    resetButton.addEventListener('click', () => {
+        dofDescriptors.forEach((descriptor, idx) => {
+            dofValues[idx] = descriptor.defaultValue;
+            syncDofInput(idx);
+        });
+    });
+
+    selectAllButton.addEventListener('click', () => {
+        setAllLinkFrames(true);
+    });
+
+    deselectAllButton.addEventListener('click', () => {
+        setAllLinkFrames(false);
+    });
+
+    engine.animation_loop( ()  => {
+        linkTransforms = forwardKinematics(robot, dofValues);
+        linkTransforms.forEach((transform, linkIdx) => {
+            robot.set_link_mesh_pose_from_SE3_matrix(engine, linkIdx, transform);
+        });
+
+        linkTransforms.forEach((transform, linkIdx) => {
+            if (linkFrameVisible[linkIdx]) {
+                drawLocalFrame(engine, transform, 0.13);
+            }
+        });
+    });
+
+    function buildDofControls() {
+        dofDescriptors.forEach((descriptor, idx) => {
+            const row = document.createElement('div');
+            row.className = 'dof-row';
+
+            const label = document.createElement('label');
+            label.className = 'dof-label';
+            label.htmlFor = `dof-slider-${idx}`;
+            label.title = descriptor.label;
+            label.textContent = descriptor.label;
+
+            const slider = document.createElement('input');
+            slider.className = 'dof-slider';
+            slider.id = `dof-slider-${idx}`;
+            slider.type = 'range';
+            slider.min = descriptor.min;
+            slider.max = descriptor.max;
+            slider.step = descriptor.step;
+            slider.value = dofValues[idx];
+
+            const number = document.createElement('input');
+            number.className = 'dof-number';
+            number.type = 'number';
+            number.min = descriptor.min;
+            number.max = descriptor.max;
+            number.step = descriptor.step;
+            number.value = formatNumber(dofValues[idx]);
+
+            slider.addEventListener('input', () => {
+                setDofValue(idx, Number(slider.value));
+            });
+
+            number.addEventListener('change', () => {
+                setDofValue(idx, Number(number.value));
+            });
+
+            dofInputs[idx] = {slider, number};
+            row.append(label, slider, number);
+            dofControlsElement.appendChild(row);
+        });
+    }
+
+    function buildLinkControls() {
+        robot.links.forEach((link, idx) => {
+            const row = document.createElement('label');
+            row.className = 'link-row';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = linkFrameVisible[idx];
+            checkbox.addEventListener('change', () => {
+                linkFrameVisible[idx] = checkbox.checked;
+            });
+
+            const name = document.createElement('span');
+            name.className = 'link-name';
+            name.title = `${idx}: ${link.link_name}`;
+            name.textContent = `${idx}: ${link.link_name}`;
+
+            linkInputs[idx] = checkbox;
+            row.append(checkbox, name);
+            linkControlsElement.appendChild(row);
+        });
+    }
+
+    function applyRobotVisibility() {
+        robot.set_mesh_visibility(engine, visualizationState.meshVisible);
+        robot.set_wireframe_visibility(engine, visualizationState.wireframeVisible);
+    }
+
+    function setAllLinkFrames(visible) {
+        linkFrameVisible.fill(visible);
+        linkInputs.forEach(input => {
+            input.checked = visible;
+        });
+    }
+
+    function setDofValue(idx, value) {
+        if (!Number.isFinite(value)) {
+            syncDofInput(idx);
+            return;
+        }
+
+        const descriptor = dofDescriptors[idx];
+        dofValues[idx] = clamp(value, descriptor.min, descriptor.max);
+        syncDofInput(idx);
+    }
+
+    function syncDofInput(idx) {
+        const {slider, number} = dofInputs[idx];
+        slider.value = dofValues[idx];
+        number.value = formatNumber(dofValues[idx]);
+    }
+
+    function getDofDescriptors(robotModel) {
+        const descriptors = new Array(robotModel.num_dofs());
+        robotModel.joints.forEach(joint => {
+            if (joint.joint_type_string === 'revolute') {
+                descriptors[joint.dof_idx] = {
+                    label: `${joint.dof_idx}: ${joint.joint_name}`,
+                    min: joint.lower_bound,
+                    max: joint.upper_bound,
+                    step: 0.01,
+                    defaultValue: clamp(0, joint.lower_bound, joint.upper_bound)
+                };
+            } else if (joint.joint_type_string === 'prismatic') {
+                descriptors[joint.dof_idx] = {
+                    label: `${joint.dof_idx}: ${joint.joint_name}`,
+                    min: joint.lower_bound,
+                    max: joint.upper_bound,
+                    step: 0.005,
+                    defaultValue: clamp(0, joint.lower_bound, joint.upper_bound)
+                };
+            } else if (joint.joint_type_string === 'floating') {
+                const rotationNames = ['roll', 'pitch', 'yaw'];
+                const translationNames = ['x', 'y', 'z'];
+                joint.rotation_dof_idxs.forEach((dofIdx, axisIdx) => {
+                    descriptors[dofIdx] = {
+                        label: `${dofIdx}: ${joint.joint_name} ${rotationNames[axisIdx]}`,
+                        min: -Math.PI,
+                        max: Math.PI,
+                        step: 0.01,
+                        defaultValue: 0
+                    };
+                });
+                joint.translation_dof_idxs.forEach((dofIdx, axisIdx) => {
+                    descriptors[dofIdx] = {
+                        label: `${dofIdx}: ${joint.joint_name} ${translationNames[axisIdx]}`,
+                        min: -1,
+                        max: 1,
+                        step: 0.005,
+                        defaultValue: 0
+                    };
+                });
+            }
+        });
+
+        return Array.from({length: descriptors.length}, (_, idx) => descriptors[idx] ?? {
+            label: `${idx}: unused`,
+            min: -1,
+            max: 1,
+            step: 0.01,
+            defaultValue: 0
+        });
+    }
+
+    function forwardKinematics(robotModel, dofs) {
+        const transforms = robotModel.links.map(() => identitySE3());
+
+        robotModel.kinematic_hierarchy.forEach(layer => {
+            layer.forEach(linkIdx => {
+                const link = robotModel.links[linkIdx];
+                if (link.parent_joint_idx === null || link.parent_joint_idx === undefined) {
+                    transforms[linkIdx] = identitySE3();
+                    return;
+                }
+
+                const joint = robotModel.joints[link.parent_joint_idx];
+                const parentTransform = transforms[joint.parent_link_idx] ?? identitySE3();
+                transforms[linkIdx] = multiplySE3(parentTransform, jointTransform(joint, dofs));
+            });
+        });
+
+        return transforms;
+    }
+
+    function jointTransform(joint, dofs) {
+        const originTransform = xyzRpySE3(joint.xyz, joint.rpy);
+        let motionTransform = identitySE3();
+
+        if (joint.joint_type_string === 'revolute') {
+            motionTransform = rotationSE3(axisAngleSO3(toVector3(joint.axis), dofs[joint.dof_idx]));
+        } else if (joint.joint_type_string === 'prismatic') {
+            const axis = normalizeVector(toVector3(joint.axis));
+            motionTransform = translationSE3(axis.map(v => v * dofs[joint.dof_idx]));
+        } else if (joint.joint_type_string === 'floating') {
+            const r = joint.rotation_dof_idxs.map(dofIdx => dofs[dofIdx]);
+            const t = joint.translation_dof_idxs.map(dofIdx => dofs[dofIdx]);
+            motionTransform = makeSE3(rpySO3(r), t);
+        }
+
+        return multiplySE3(originTransform, motionTransform);
+    }
+
+    function drawLocalFrame(engine, transform, length) {
+        const origin = [[transform[0][3]], [transform[1][3]], [transform[2][3]]];
+        const xEnd = axisEndpoint(transform, 0, length);
+        const yEnd = axisEndpoint(transform, 1, length);
+        const zEnd = axisEndpoint(transform, 2, length);
+        const tailWidth = length * 0.045;
+        const arrowHeight = length * 0.28;
+
+        engine.draw_debug_vector(origin, xEnd, tailWidth, arrowHeight, 0xff3333, 0.95);
+        engine.draw_debug_vector(origin, yEnd, tailWidth, arrowHeight, 0x2fb344, 0.95);
+        engine.draw_debug_vector(origin, zEnd, tailWidth, arrowHeight, 0x3366ff, 0.95);
+    }
+
+    function axisEndpoint(transform, columnIdx, length) {
+        return [
+            [transform[0][3] + transform[0][columnIdx] * length],
+            [transform[1][3] + transform[1][columnIdx] * length],
+            [transform[2][3] + transform[2][columnIdx] * length]
+        ];
+    }
+
+    function identitySE3() {
+        return [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ];
+    }
+
+    function makeSE3(rotation, translation) {
+        return [
+            [rotation[0][0], rotation[0][1], rotation[0][2], translation[0]],
+            [rotation[1][0], rotation[1][1], rotation[1][2], translation[1]],
+            [rotation[2][0], rotation[2][1], rotation[2][2], translation[2]],
+            [0, 0, 0, 1]
+        ];
+    }
+
+    function translationSE3(translation) {
+        return makeSE3(identitySO3(), translation);
+    }
+
+    function rotationSE3(rotation) {
+        return makeSE3(rotation, [0, 0, 0]);
+    }
+
+    function xyzRpySE3(xyz, rpy) {
+        return makeSE3(rpySO3(rpy), xyz);
+    }
+
+    function identitySO3() {
+        return [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ];
+    }
+
+    function rpySO3(rpy) {
+        return multiplySO3(multiplySO3(xRotationSO3(rpy[0]), yRotationSO3(rpy[1])), zRotationSO3(rpy[2]));
+    }
+
+    function xRotationSO3(theta) {
+        return [
+            [1, 0, 0],
+            [0, Math.cos(theta), -Math.sin(theta)],
+            [0, Math.sin(theta), Math.cos(theta)]
+        ];
+    }
+
+    function yRotationSO3(theta) {
+        return [
+            [Math.cos(theta), 0, Math.sin(theta)],
+            [0, 1, 0],
+            [-Math.sin(theta), 0, Math.cos(theta)]
+        ];
+    }
+
+    function zRotationSO3(theta) {
+        return [
+            [Math.cos(theta), -Math.sin(theta), 0],
+            [Math.sin(theta), Math.cos(theta), 0],
+            [0, 0, 1]
+        ];
+    }
+
+    function axisAngleSO3(axis, theta) {
+        const [x, y, z] = normalizeVector(axis);
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+        const v = 1 - c;
+
+        return [
+            [c + x * x * v, x * y * v - z * s, x * z * v + y * s],
+            [y * x * v + z * s, c + y * y * v, y * z * v - x * s],
+            [z * x * v - y * s, z * y * v + x * s, c + z * z * v]
+        ];
+    }
+
+    function multiplySO3(a, b) {
+        const out = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
+        ];
+
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                for (let k = 0; k < 3; k++) {
+                    out[row][col] += a[row][k] * b[k][col];
+                }
+            }
+        }
+
+        return out;
+    }
+
+    function multiplySE3(a, b) {
+        const out = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ];
+
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                for (let k = 0; k < 4; k++) {
+                    out[row][col] += a[row][k] * b[k][col];
+                }
+            }
+        }
+
+        return out;
+    }
+
+    function toVector3(value) {
+        if (Array.isArray(value[0])) {
+            return [value[0][0], value[1][0], value[2][0]];
+        }
+
+        return value;
+    }
+
+    function normalizeVector(value) {
+        const length = Math.hypot(value[0], value[1], value[2]);
+        if (length < 0.000001) {
+            return [0, 0, 1];
+        }
+
+        return [value[0] / length, value[1] / length, value[2] / length];
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function formatNumber(value) {
+        return Number(value).toFixed(3);
+    }
+
+</script>
+</body>
+</html>
