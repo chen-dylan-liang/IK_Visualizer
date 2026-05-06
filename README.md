@@ -26,7 +26,7 @@ Interaction:
 
 - Select `XArm7` or `Unitree dog + arm` from the Robot menu.
 - Drag a colored IK target sphere in the scene.
-- The blue sphere marks the current end-effector position.
+- The colored sphere marks the current end-effector position.
 - The colored line shows the current position error from the end-effector to its target.
 - Enable `Smooth` to penalize large joint changes between frames.
 
@@ -48,33 +48,33 @@ Because trunk translation is shared by the kinematic model, dragging one target 
 
 ## Method
 
-For an active end-effector with position \(x(q)\) and target \(x^*\), the default objective is:
+For an active end-effector with position $x(q)$ and target $x^*$, the default objective is:
 
-\[
+$$
 \min_q \|x(q) - x^*\|^2
-\]
+$$
 
 With `Smooth` enabled, the solver adds a frame-to-frame regularization term:
 
-\[
+$$
 \min_q \|x(q) - x^*\|^2 + \lambda \|q - q_{\text{prev}}\|^2
-\]
+$$
 
-where \(q_{\text{prev}}\) is the previous frame's joint vector for the active solve variables.
+where $q_{\text{prev}}$ is the previous frame's joint vector for the active solve variables.
 
-The solver uses a damped Gauss-Newton / Levenberg-Marquardt style step. Let \(e = x(q) - x^*\) and \(J = \frac{\partial x}{\partial q}\). Each iteration solves:
+The solver uses a damped Gauss-Newton / Levenberg-Marquardt style step. Let $e = x(q) - x^*$ and $J = \frac{\partial x}{\partial q}$. Each iteration solves:
 
-\[
+$$
 (J^T J + \mu I + \lambda I)\Delta q =
 -J^T e - \lambda(q - q_{\text{prev}})
-\]
+$$
 
 Then the update is line-searched, joint-limited by clamping, and applied only if it decreases the objective.
 
 The position Jacobian is computed analytically from the current forward kinematics:
 
-- Revolute joint \(i\): \(J_i = a_i \times (x - o_i)\)
-- Prismatic joint \(i\): \(J_i = a_i\)
+- Revolute joint $i$: $J_i = a_i \times (x - o_i)$
+- Prismatic joint $i$: $J_i = a_i$
 - Movable trunk translation DOFs: treated as prismatic axes
 
-Here \(a_i\) is the joint axis in world coordinates and \(o_i\) is the joint origin in world coordinates. For Unitree, trunk rotation DOFs are excluded from every IK target group, so the base can translate but not rotate.
+Here $a_i$ is the joint axis in world coordinates and $o_i$ is the joint origin in world coordinates. For Unitree, trunk rotation DOFs are excluded from every IK target group, so the base can translate but not rotate.
