@@ -51,13 +51,13 @@ Because trunk translation is shared by the kinematic model, dragging one target 
 For an active end-effector with position $x(q)$ and target $x^*$, the default objective is:
 
 $$
-\min_q \|x(q) - x^*\|^2
+\min_q ||x(q) - x^*||^2
 $$
 
 With `Smooth` enabled, the solver adds a frame-to-frame regularization term:
 
 $$
-\min_q \|x(q) - x^*\|^2 + \lambda \|q - q_{\text{prev}}\|^2
+\min_q ||x(q) - x^*||^2 + \lambda ||q - q_{\text{prev}}||^2
 $$
 
 where $q_{\text{prev}}$ is the previous frame's joint vector for the active solve variables.
