@@ -5,13 +5,13 @@ Final project for Yale CPSC 4870/5870 (SP26): 3D Spatial Modeling and Computing.
 This project includes Three.js visualizers for robot forward and inverse kinematics. The main inverse kinematics demo is [visualizers/ik.html](visualizers/ik.html).
 
 ## Running
+The IK solver is live [here](https://chen-dylan-liang.github.io/IK_Visualizer/visualizers/ik.html).
 
-Serve the repository from its root directory, then open the IK visualizer in a browser:
-
+To serve the repository locally, enter the following command in its root directory:
 ```bash
 python3 -m http.server 8000
 ```
-
+ Then open the IK visualizer in a browser:
 ```text
 http://127.0.0.1:8000/visualizers/ik.html
 ```
